@@ -11,36 +11,46 @@
         </form>
 
         <?php
+            require_once 'GoogleService.php';
+            require_once 'BingService.php';
+
             if (isset($_FILES['speech'])) {
 
-                $flac = $_FILES['speech']['tmp_name'];
+                $tmp = $_FILES['speech']['tmp_name'];
 
-                require_once 'GoogleService.php';
-                require_once 'BingService.php';
+                $flac = __DIR__.'/'.uniqid().'.flac';
 
-               try {
-                   $result = (new GoogleService())->toText($flac);
-                   echo '<p><b>Google:</b> '.$result.'</p>';
-               } catch (RuntimeException $exception){
-                   echo '<p><b>Google:</b> <span style="color: red">'.$exception->getMessage().'</span></p>';
-               }
+                $result = exec('ffmpeg -i '.$tmp.' -ar 16000 -ac 1 -acodec flac '.$flac.' 2>&1');
 
-                $wav = uniqid().'.wav';
+                if (strpos($result, 'audio:')){
 
-                $result = exec('ffmpeg -i '.$flac.' '.$wav.' 2>&1');
-
-                if (strpos($result, 'audio:')) {
                     try {
-                        $result = (new BingService())->toText(__DIR__.'/'.$wav);
-                        echo '<p><b>Microsoft:</b> '.$result.'</p>';
-                    } catch (RuntimeException $exception) {
-                        echo '<p><b>Microsoft:</b> <span style="color: red">'.$exception->getMessage().'</span></p>';
+                        $result = (new GoogleService())->toText($flac);
+                        echo '<p><b>Google:</b> '.$result.'</p>';
+                    } catch (RuntimeException $exception){
+                        echo '<p><b>Google:</b> <span style="color: red">'.$exception->getMessage().'</span></p>';
                     }
-                } else {
-                    echo '<p><b>Microsoft:</b> <span style="color: red">Unable to convert the audio file</span></p>';
-                }
 
-                @unlink(__DIR__.'/'.$wav);
+                    $wav = __DIR__.'/'.uniqid().'.wav';
+
+                    $result = exec('ffmpeg -i '.$flac.' '.$wav.' 2>&1');
+
+                    if (strpos($result, 'audio:')) {
+                        try {
+                            $result = (new BingService())->toText($wav);
+                            echo '<p><b>Microsoft:</b> '.$result.'</p>';
+                        } catch (RuntimeException $exception) {
+                            echo '<p><b>Microsoft:</b> <span style="color: red">'.$exception->getMessage().'</span></p>';
+                        }
+                    } else {
+                        echo '<p><b>Microsoft:</b> <span style="color: red">Unable to convert the audio file</span></p>';
+                    }
+
+                    @unlink($wav);
+                    @unlink($flac);
+                } else {
+                    echo '<p><span style="color: red">Incorrect FLAC was given</span></p>';
+                }
             }
         ?>
     </body>

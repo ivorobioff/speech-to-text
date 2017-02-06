@@ -1,6 +1,4 @@
 <?php
-require_once 'Flac.php';
-
 /**
  * @author Igor Vorobiov<igor.vorobioff@gmail.com>
  */
@@ -15,14 +13,12 @@ class GoogleService
      */
     public function toText($file, $lang = 'nl-NL')
     {
-        $meta = new Flac($file);
-
         $url = 'https://speech.googleapis.com/v1beta1/speech:syncrecognize?key='.self::API_KEY;
 
         $data = [
             'config' => [
                 'encoding' => 'FLAC',
-                'sampleRate' => $meta->streamSampleRate,
+                'sampleRate' => 16000,
                 'languageCode' => $lang
             ],
             'audio' => [
